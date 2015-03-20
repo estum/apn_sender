@@ -2,7 +2,8 @@
 .DS_Store
 
 ## TEXTMATE
-*.tmproj
+/*.tmproj
+/.tm_properties
 tmtags
 
 ## EMACS
@@ -14,21 +15,26 @@ tmtags
 *.swp
 
 ## PROJECT::GENERAL
-coverage
-rdoc
-pkg
-.rvmrc
+/coverage
+/pkg
 
 # don't commit Gemfile.lock
-*.lock
-*.gem
+/*.lock
+/*.gem
 
 # rdoc generated
-rdoc
+/rdoc
 
 # yard generated
-doc
-.yardoc
+/doc
+/.yardoc
 
 # bundler
-.bundle
+/.bundle
+
+# ruby versioning & gemsets
+/.gems
+/.rbenv-gemsets
+/.ruby-gemset
+/.ruby-version
+/.rvmrc
