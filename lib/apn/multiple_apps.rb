@@ -16,7 +16,10 @@ module APN
     end
 
     def notify_sync_with_app(token, notification)
-      app_name = notification.delete(:app) if notification.is_a?(Hash)
+      if notification.is_a?(Hash)
+        notification.symbolize_keys!
+        app_name = notification.delete(:app)
+      end
 
       with_app(app_name) do
         notify_sync_without_app(token, notification)
