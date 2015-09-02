@@ -8,10 +8,10 @@ describe APN::Notification do
     APN::Notification.new(token, payload)
   end
 
-  describe ".packaged_message" do
+  describe ".payload" do
 
     let(:message) do
-      notification.packaged_message
+      notification.payload
     end
 
     context "when payload is a string" do
@@ -42,16 +42,6 @@ describe APN::Notification do
       end
     end
 
-    context "when payload is over 2048 bytes" do
-      let(:payload) { "»" * 2049 }
-
-      it "raises" do
-        expect {
-          notification.packaged_message
-        }.to raise_error
-      end
-    end
-
     [1, true].each do |v|
       context "when content_available is #{v}" do
         let(:payload) do
@@ -70,12 +60,12 @@ describe APN::Notification do
     end
   end
 
-  describe ".packaged_token" do
+  describe ".token" do
 
     context "when is a valid token" do
 
       it "has 32 byte size" do
-        expect(notification.packaged_token.bytesize).to eq(32)
+        expect([notification.token].pack("H*").bytesize).to eq(32)
       end
     end
 
@@ -83,7 +73,7 @@ describe APN::Notification do
       let(:token) { "2589b1aa363d23d8d7f166951a9e3ff41fb0130a637d6997a2080d881b2a19b5" }
 
       it "has 32 byte size" do
-        expect(notification.packaged_token.bytesize).to eq(32)
+        expect([notification.token].pack("H*").bytesize).to eq(32)
       end
     end
 
@@ -92,64 +82,6 @@ describe APN::Notification do
 
       it "raises" do
         pending
-      end
-    end
-  end
-
-  describe ".truncate_alert!" do
-
-    before do
-      APN.truncate_alert = true
-    end
-    after do
-      APN.truncate_alert = false
-    end
-
-    context "when alert is a string" do
-      let(:payload) { "a" * 2049 }
-
-      it "truncates the alert" do
-        expect(notification.packaged_message.size.to_i).to eq(APN::Notification::DATA_MAX_BYTES)
-      end
-
-      it "has payload size equals payload byte size" do
-        expect(notification.packaged_message.size.to_i).to eq(notification.payload_size)
-      end
-
-      it "has payload truncated only the alert" do
-        expect(notification.packaged_message).to eq({aps:{alert: "a" * 2027 }}.to_json)
-      end
-    end
-
-    context "when payload is a hash" do
-      let(:payload) do
-        { alert: { 'loc-args' => ["a" * 2049] }}
-      end
-
-      it "truncates the alert" do
-        expect(notification.packaged_message.size.to_i).to eq(APN::Notification::DATA_MAX_BYTES)
-      end
-
-      it "has payload size equals payload byte size" do
-        expect(notification.packaged_message.size.to_i).to eq(notification.payload_size)
-      end
-    end
-
-    context "when payload is multibyte string" do
-      let(:payload) { "»" * 2048 }
-
-      it "truncates the alert in a way that no multibyte character gets truncated " do
-        expect(notification.payload_size).to eq(APN::Notification::DATA_MAX_BYTES - 1)
-      end
-
-      if ActiveSupport::VERSION::MAJOR == 4
-        it "has different payload size and message size" do
-          expect(notification.packaged_message.size.to_i).to_not eq(notification.payload_size)
-        end
-      elsif ActiveSupport::VERSION::MAJOR == 3
-        it "has the same payload size and message size" do
-          expect(notification.packaged_message.size.to_i).to eq(notification.payload_size)
-        end
       end
     end
   end

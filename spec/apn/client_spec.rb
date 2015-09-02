@@ -2,6 +2,8 @@ require 'spec_helper'
 describe APN::Client do
 
   let(:socket) { double("SSLSocket") }
+  let(:token)        { "2589b1aa 363d23d8 d7f16695 1a9e3ff4 1fb0130a 637d6997 a2080d88 1b2a19b5" }
+  let(:notification) { APN::Notification.new(token.gsub(/\W/, ''), alert: "hi")}
 
   describe ".push" do
 
@@ -17,9 +19,9 @@ describe APN::Client do
     context "when pushing a message" do
 
       it "sends write to socket" do
-        socket.stub(:flush)
-        socket.should_receive(:write).with("hi")
-        client.push("hi")
+        # socket.stub(:flush)
+        socket.should_receive(:write).with(notification.message)
+        client.push(notification)
       end
     end
   end

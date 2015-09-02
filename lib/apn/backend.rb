@@ -4,16 +4,16 @@ module APN
     autoload :Resque,      'apn/backend/resque'
 
     class Simple
-      def notify(token, opts)
+      def notify(*args)
         Thread.new do
-          APN.notify_sync(token, opts)
+          APN.notify_sync(*args)
         end
       end
     end
 
     class Null
-      def notify(token, opts)
-        APN.log("Null Backend sending message to #{token}")
+      def notify(*args)
+        APN.logger.info { "Null Backend sending message #{token}" }
       end
     end
   end

@@ -67,9 +67,9 @@ if ENV['APN_MULTIPLE_APPS'] == 'true'
       context 'when payload is a hash containing app name' do
         it 'remove app name from payload' do
           APN::Client.should_receive(:new).with(client_args).and_return(client)
-          socket.stub(:flush)
-          socket.should_receive(:write).with(notification.to_s)
-          APN.notify_sync(token, alert: "hi", app: "other")
+          # socket.stub(:flush)
+          socket.should_receive(:write).with(notification.message)
+          APN.notify_sync(token, "other", { 'alert' => "hi" })
         end
       end
     end

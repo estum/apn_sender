@@ -8,7 +8,7 @@ module APN::Jobs
     sidekiq_options :queue => QUEUE_NAME
 
     # Build a notification from arguments and send to Apple
-    def perform(token, opts)
+    def perform(*token, opts)
       APN.notify_sync(token, opts)
     end
   end

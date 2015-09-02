@@ -7,22 +7,22 @@ require 'connection_pool'
 
 require "apn/version"
 require "apn/connection"
+require "apn/errors"
 
 module APN
   class << self
     include APN::Connection
 
-    def notify_async(token, opts = {})
-      token = token.to_s.gsub(/\W/, '')
-      backend.notify(token, opts)
+    def notify_async(token, opts)
+      backend.notify(*token, opts)
     end
 
     def notify_sync(token, opts)
-      token = token.to_s.gsub(/\W/, '')
       msg = APN::Notification.new(token, opts)
-      raise "Invalid notification options (did you provide :alert, :badge, or :sound?): #{opts.inspect}" unless msg.valid?
+      raise APN::InvalidNotification unless msg.valid?
 
-      APN.log(:debug, "Sending to token '#{token}' message '#{opts.to_s}'")
+      debug_sending(token, msg)
+
       APN.with_connection do |client|
         client.push(msg)
       end
@@ -52,14 +52,6 @@ module APN
       @logger ||= Logger.new(STDOUT)
     end
 
-    def truncate_alert
-      @truncate_alert ||= false
-    end
-
-    def truncate_alert=(truncate)
-      @truncate_alert = truncate
-    end
-
     # Log message to any logger provided by the user (e.g. the Rails logger).
     # Accepts +log_level+, +message+, since that seems to make the most sense,
     # and just +message+, to be compatible with Resque's log method and to enable
@@ -72,6 +64,10 @@ module APN
 
       return false unless logger && logger.respond_to?(level)
       logger.send(level, "#{Time.now}: #{message}")
+    end
+
+    def debug_sending(token, msg)
+      APN.logger.debug { "Sending message '#{msg.payload}' to token '#{token}'" }
     end
 
     # Log the message first, to ensure it reports what went wrong if in daemon mode.

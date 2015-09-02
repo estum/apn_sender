@@ -10,22 +10,37 @@ module APN
       self
     end
 
-    def push(message)
-      socket.write(message.to_s)
-      socket.flush
+    def push(notification)
+      return unless notification.kind_of?(Notification)
+      return if notification.sent?
+      return unless notification.valid?
 
-      if IO.select([socket], nil, nil, 1) && error = socket.read(6)
-        error = error.unpack("ccN")
-        APN.log(:error, "Error on message: #{error}")
-        return false
+      socket.write(notification.message)
+      # socket.flush
+
+      notification.mark_as_sent!
+
+      read_socket, write_socket = IO.select([socket], [socket], [socket], nil)
+      if (read_socket && read_socket[0])
+        if error = socket.read(6)
+          command, status, index = error.unpack("ccN")
+          notification.apns_error_code = status
+          notification.mark_as_unsent!
+          raise notification.error
+        end
       end
 
-      APN.log(:debug, "Message sent.")
-      true
+      APN.logger.debug { "Message sent." }
+      notification
+
+    rescue APN::ServerError => e
+      APN.logger.error { "Error on message: #{e}" }
+      false
+
     rescue OpenSSL::SSL::SSLError, Errno::EPIPE, Errno::ETIMEDOUT => e
-      APN.log(:error, "[##{self.object_id}] Exception occurred: #{e.inspect}, socket state: #{socket.inspect}")
+      APN.logger.error { "[##{object_id}] Exception occurred: #{e.inspect}, socket state: #{socket.inspect}" }
       reset_socket
-      APN.log(:debug, "[##{self.object_id}] Socket reestablished, socket state: #{socket.inspect}")
+      APN.logger.warn { "[##{object_id}] Socket reestablished, socket state: #{socket.inspect}" }
       retry
     end
 
@@ -44,20 +59,36 @@ module APN
 
     # Open socket to Apple's servers
     def setup_socket
-      ctx = setup_certificate
+      APN.logger.debug { "Connecting to #{@host}:#{@port}..." }
 
-      APN.log(:debug, "Connecting to #{@host}:#{@port}...")
-
-      socket_tcp = TCPSocket.new(@host, @port)
-      OpenSSL::SSL::SSLSocket.new(socket_tcp, ctx).tap do |s|
-        s.sync = true
-        s.connect
+      @context ||= setup_certificate
+      @tcp_socket = TCPSocket.new(@host, @port)
+      OpenSSL::SSL::SSLSocket.new(@tcp_socket, @context).tap do |ssl|
+        ssl.sync = true
+        ssl.connect
       end
     end
 
-    def reset_socket
-      @socket.close if @socket
+    def close
+      return false if closed?
+
+      @tcp_socket.close
+      @tcp_socket = nil
+
+      @socket.close
       @socket = nil
+    end
+
+    def open?
+      not closed?
+    end
+
+    def closed?
+      (@tcp_socket and @socket).nil?
+    end
+
+    def reset_socket
+      close
       socket
     end
 
@@ -66,13 +97,11 @@ module APN
       ctx.cert = OpenSSL::X509::Certificate.new(@apn_cert)
       if @cert_pass
         ctx.key = OpenSSL::PKey::RSA.new(@apn_cert, @cert_pass)
-        APN.log(:debug, "Setting up certificate using a password.")
-
+        APN.logger.debug { "Setting up certificate using a password." }
       else
         ctx.key = OpenSSL::PKey::RSA.new(@apn_cert)
       end
       ctx
     end
-
   end
 end

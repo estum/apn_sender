@@ -16,15 +16,15 @@ module APN
     attr_reader :name
 
     def initialize(name, options = nil) # :yields:
-      @name                  = name.to_s.freeze
-      @pool_size             = APN.original_pool_size
-      @pool_timeout          = APN.original_pool_timeout
-      @host                  = APN.original_host
-      @port                  = APN.original_port
-      @root                  = APN.original_root
-      @password              = APN.original_password
-      @certificate_name      = APN.original_certificate_name
-      @full_certificate_path = APN.original_full_certificate_path
+      @name          = name.to_s.freeze
+      @pool_size     = APN.original_pool_size
+      @pool_timeout  = APN.original_pool_timeout
+      @host          = APN.original_host
+      @port          = APN.original_port
+      @root          = APN.original_root
+      @password      = APN.original_password
+      @cert_name     = APN.original_certificate_name
+      # @full_certificate_path = APN.original_full_certificate_path
 
       self.attributes = options if options.is_a? Hash
       yield(self)               if block_given?

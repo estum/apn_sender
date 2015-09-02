@@ -5,6 +5,7 @@ module APN
     def self.extended(mod)
       class << mod
         alias_method_chain :notify_sync, :app
+        alias_method_chain :debug_sending, :app
 
         delegate(*Application::DELEGATE_METHODS, to: :current_app, prefix: true, allow_nil: true)
 
@@ -15,14 +16,11 @@ module APN
       end
     end
 
-    def notify_sync_with_app(token, notification)
-      if notification.is_a?(Hash)
-        notification.symbolize_keys!
-        app_name = notification.delete(:app)
-      end
+    def notify_sync_with_app(token, opts)
+      app_name = token.pop if token.is_a?(Array)
 
       with_app(app_name) do
-        notify_sync_without_app(token, notification)
+        notify_sync_without_app(*token, opts)
       end
     end
 
@@ -46,6 +44,10 @@ module APN
       yield if block_given?
     ensure
       @_app_name = app_was
+    end
+
+    def debug_sending_with_app(token, msg)
+      APN.logger.debug { "Sending message '#{msg.payload}' to token '#{token}' for app '#{current_app_name}'" }
     end
   end
 end
