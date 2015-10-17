@@ -25,13 +25,15 @@ module APN
     end
 
     attr_writer :default_app_name
+    
+    DEFAULT ||= 'default'.freeze
 
     def default_app_name
-      @default_app_name || 'default'.freeze
+      @default_app_name ||= DEFAULT
     end
 
     def current_app_name
-      @_app_name || default_app_name
+      Thread.current[:app_name] || default_app_name
     end
 
     def current_app
@@ -40,10 +42,10 @@ module APN
     end
 
     def with_app(app_name)
-      @_app_name, app_was = app_name.presence, @_app_name
+      Thread.current[:app_name] = app_name.presence
       yield if block_given?
     ensure
-      @_app_name = app_was
+      Thread.current[:app_name] = nil
     end
 
     def debug_sending_with_app(token, msg)
