@@ -5,7 +5,7 @@ module APN
     include Connection
     APPS             = {}
     OPTION_KEYS      = [:pool_size, :pool_timeout, :host, :port, :root, :password, :certificate_name, :full_certificate_path].freeze
-    DELEGATE_METHODS = [:with_connection, :connection_pool].concat(OPTION_KEYS).freeze
+    DELEGATE_METHODS = [:with_connection, :connection_pool, :certificate].concat(OPTION_KEYS).freeze
 
     def self.register(*args, &block)
       new(*args, &block).tap do |app|
